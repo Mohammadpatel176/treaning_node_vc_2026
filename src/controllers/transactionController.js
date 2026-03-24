@@ -1,5 +1,6 @@
 const Account = require("../models/TempAccount");
 const Transaction = require("../models/Transaction");
+const PDFDocument = require("pdfkit");
 
 // Validation helper
 const validateAmount = (amount) => {
@@ -8,7 +9,38 @@ const validateAmount = (amount) => {
     }
 };
 
-// ✅ Deposit
+
+// To return bank statement in pdf format 
+const generateStatementPDF = (account, transactions, res) => {
+    const doc = new PDFDocument();
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=statement-${account._id}.pdf`
+    );
+
+    doc.pipe(res);
+
+    doc.fontSize(18).text("Bank Statement", { align: "center" });
+    doc.moveDown();
+
+    doc.fontSize(12).text(`Account ID: ${account._id}`);
+    doc.text(`Balance: ₹${account.balance}`);
+    doc.moveDown();
+
+    transactions.forEach((tx, index) => {
+        doc.text(
+            `${index + 1}. ${tx.type.toUpperCase()} | ₹${tx.amount} | ${new Date(tx.date).toLocaleString()}`
+        );
+    });
+
+    doc.end();
+};
+
+
+
+// Deposit
 exports.deposit = async (req, res) => {
     try {
         const { id } = req.params;
@@ -37,7 +69,7 @@ exports.deposit = async (req, res) => {
     }
 };
 
-// ✅ Withdraw
+// Withdraw
 exports.withdraw = async (req, res) => {
     try {
         const { id } = req.params;
@@ -70,7 +102,7 @@ exports.withdraw = async (req, res) => {
     }
 };
 
-// ✅ Transfer
+// Transfer
 exports.transfer = async (req, res) => {
     try {
         const { fromId, toId, amount } = req.body;
@@ -120,7 +152,7 @@ exports.transfer = async (req, res) => {
     }
 };
 
-// ✅ Transaction History
+// Transaction History
 exports.getTransactionHistory = async (req, res) => {
     try {
         const { id } = req.params;
@@ -140,6 +172,27 @@ exports.getTransactionHistory = async (req, res) => {
             currentBalance: account.balance,
             transactions
         });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Bank Statement in pdf format
+exports.downloadStatement = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const account = await Account.findById(id);
+        if (!account) {
+            return res.status(404).json({ msg: "Account not found" });
+        }
+
+        const transactions = await Transaction.find({
+            $or: [{ fromAccount: id }, { toAccount: id }]
+        }).sort({ date: -1 });
+
+        generateStatementPDF(account, transactions, res);
 
     } catch (err) {
         res.status(500).json({ error: err.message });
