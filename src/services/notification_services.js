@@ -1,5 +1,5 @@
 const Notification = require("../models/notification_model");
-const { logEvent, logError } = require("./logger_service");
+const log = require("./logger_service");
 
 //create notification
 const createNotification = async (userId, message, type = "SYSTEM", metadata = {}) => {
@@ -11,11 +11,11 @@ const createNotification = async (userId, message, type = "SYSTEM", metadata = {
             metadata
         });
 
-        logEvent(`Notification created: ${message}`, userId);
+        log.success(`Notification created: ${message} | User: ${userId}`);
         return notification;
     }
     catch(err){
-        logError("CreateNotification", err, userId);
+        log.error(`CreateNotification Error: ${err.message} | User: ${userId}`);
         throw err;
     }
 };
@@ -26,12 +26,12 @@ const getUserNotifications = async (userId) => {
         const notifications = await Notification.find({ userId })
           .sort({ createdAt: -1 });
         
-          logEvent("Fetched user notifications", userId);
+          log.info(`Fetched user notifications | User: ${userId}`);
 
           return notifications;
     }
     catch(err){
-        logError("getUserNotifications", err, userId);
+        log.error(`getUserNotifications ${err.message} | User: ${userId}`);
         throw err;
     }
 };
@@ -45,12 +45,12 @@ const markAsRead = async (notificationId, userId) => {
             { new: true }
         );
 
-        logEvent(`Notification marked as read: ${notificationId}`, userId);
+        log.info(`Notification marked as read: ${notificationId} | User: ${userId}`);
 
         return notification;
     }
     catch(err){
-        logError("markAsRead", err, userId);
+        log.error(`markAsRead: ${err.message} | User: ${userId}`);
         throw err;
     }
 };
@@ -64,11 +64,11 @@ const markAllRead = async (userId) => {
             { isRead: true }
          );
 
-         logEvent("All notification marked as read", userId);
+         log.info(`All notification marked as read: | User: ${userId}`);
          return true;
     }
     catch(err){
-        logError("markAllRead", err, userId);
+        log.error(`markAllRead: ${err.message} | User: ${userId}`);
         throw err;
     }
 };
@@ -79,12 +79,12 @@ const deleteNotification = async (notificationId, userId) => {
     try{
         await Notification.findByIdAndDelete(notificationId);
 
-        logEvent(`Notification deleted: ${notificationId}`, userId);
+        log.warn(`Notification deleted: ${notificationId} | User: ${userId}`);
 
         return true;
     }
     catch(err){
-        logError("deleteNotification", err, userId);
+        log.error(`deleteNotification:  ${err.message} | User: ${userId}`);
         throw err;
     }
 };

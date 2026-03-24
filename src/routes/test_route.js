@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const sendMail = require("../services/mail_services");
-const { logEvent } = require("../services/logger_service");
+const log = require("../services/logger_service");
 
 router.get("/test", async (req,res) => {
     try{
@@ -14,7 +14,7 @@ router.get("/test", async (req,res) => {
          });
 
          //log test
-         logEvent("Test API called");
+         log.info("Test API called");
 
          res.send("All services working");
     } 
