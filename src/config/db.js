@@ -10,7 +10,6 @@ function connectDB (){
         console.log("DB connection Error",error);
         process.kill();
     })
-
 }
 
 module.exports = connectDB;
