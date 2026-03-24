@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
         },
         password:{
             type: String,
-            required: true,
+            required: true, 
             minlength: 6,
             select: false
         },
@@ -34,7 +34,12 @@ const userSchema = new mongoose.Schema(
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User"
-        }
+        },
+        refreshTokens : {
+            type: [String],
+            select: false,
+            default : []
+        },
     },
     { timestamps: true }
 )

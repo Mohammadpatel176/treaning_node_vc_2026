@@ -1,28 +1,62 @@
 const jwt = require("jsonwebtoken")
 const User = require("../models/userModel")
 
-const authMiddleware = async (req, res, next) => {
+async function authMiddleware(req, res, next) {
     try {
-        const token = req.headers.authorization?.split(" ")[1]
+        let token = null
+
+        if (req.cookies?.accessToken) {
+            token = req.cookies.accessToken
+        } else if (req.headers.authorization?.startsWith("Bearer ")) {
+            token = req.headers.authorization.split(" ")[1]
+        }
 
         if (!token) {
-            return res.status(401).json({ message: "No token provided" })
+            return res.status(401).json({
+                success: false,
+                message: "Token missing"
+            })
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET)
+        let decoded
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET)
+        } catch (err) {
+            if (err.name === "TokenExpiredError") {
+                return res.status(401).json({
+                    success: false,
+                    message: "Access Token expired"
+                })
+            }
 
-        const user = await User.findById(decoded.id)
+            if (err.name === "JsonWebTokenError") {
+                return res.status(401).json({
+                    success: false,
+                    message: "Invalid token"
+                })
+            }
+
+            throw err
+        }
+
+        const user = await User.findById(decoded.id).select("-password")
 
         if (!user) {
-            return res.status(401).json({ message: "User not found" })
+            return res.status(401).json({
+                success: false,
+                message: "User not found"
+            })
         }
 
-        req.user = user
+        req.user = user 
 
         next()
 
-    } catch (error) {
-        res.status(401).json({ message: "Invalid token" })
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: "Authentication failed"
+        })
     }
 }
 
